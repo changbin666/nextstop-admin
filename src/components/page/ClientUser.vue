@@ -25,22 +25,43 @@
                 <el-table-column prop="id" label="ID" width="55" align="center"></el-table-column>
                 <el-table-column prop="nickName" label="客户昵称"></el-table-column>
                 <el-table-column prop="userEmail" label="登录邮箱"></el-table-column>
-                <el-table-column prop="isVip" label="是否VIP"></el-table-column>
-                <el-table-column prop="delStatus" label="是否删除" :formatter="delStatusFormat"></el-table-column>
+                <el-table-column prop="userPhone" label="手机号"></el-table-column>
+                <el-table-column prop="userWechat" label="微信"></el-table-column>
                 <el-table-column prop="registerTime" label="注册时间"></el-table-column>
-                <el-table-column label="操作" width="180" align="center">
+                <el-table-column label="VIP支付截图" align="center">
+                    <template slot-scope="scope">
+                        <el-image
+                            class="table-td-thumb"
+                            :src="scope.row.thumb"
+                            :preview-src-list="[scope.row.thumb]"
+                        ></el-image>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="isVip" label="是否VIP">
+                    <template slot-scope="scope">
+                        <el-switch v-model="scope.row.isVip"
+                            :active-value="1"
+                            :inactive-value="2"
+                            @change=changeVipStatus($event,scope.row,scope.$index)>
+                        </el-switch>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="delStatus" label="启用/停用">
+                    <template slot-scope="scope">
+                        <el-switch v-model="scope.row.delStatus"
+                            :active-value="0"
+                            :inactive-value="1"
+                            @change=changeDelStatus($event,scope.row,scope.$index)>
+                        </el-switch>
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" align="center">
                     <template slot-scope="scope">
                         <el-button
                             type="text"
                             icon="el-icon-edit"
                             @click="handleEdit(scope.$index, scope.row)"
                         >编辑</el-button>
-                        <el-button
-                            type="text"
-                            icon="el-icon-delete"
-                            class="red"
-                            @click="handleDelete(scope.$index, scope.row)"
-                        >删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -126,13 +147,47 @@ export default {
         this.clientUserList();
     },
     methods: {
-        //删除状态转译
-        delStatusFormat(data) {
-            if (data.delStatus == 0) {
-                return "正常";
-            } else if (data.delStatus == 1) {
-                return "已删除";
-            }
+        //停用启用状态变更
+        changeDelStatus(event,row,index) {
+            // 二次确认删除
+            this.$confirm('确定要删除吗？', '提示', {
+                type: 'warning'
+            })
+                .then(() => {
+                    let param = new URLSearchParams();
+                    param.append("id",row.id);
+                    param.append("id",row.id);
+                    this.listLoading = true;
+                    //NProgress.start();
+                    deleteClientUser(param).then((res) => {
+                        let { message, status, datas } = res;
+                        if (status !== 0) {
+                            this.$message({
+                            message: message,
+                            type: 'error'
+                            });
+                        } else {
+                            this.clientUserList();
+                        }
+                    });
+                })
+                .catch(() => {});
+        },
+        changeVipStatus(event,row,index){
+            clientUserList(param).then((res) => {
+                let { message, status, datas } = res;
+                if (status !== 0) {
+                    this.$message({
+                    message: message,
+                    type: 'error'
+                    });
+                } else {
+                    this.pageTotal = datas.total;
+                    this.tableData = datas.list;
+                    this.listLoading = false;
+                }
+                //NProgress.done();
+            });
         },
         //获取用户列表
         clientUserList() {
