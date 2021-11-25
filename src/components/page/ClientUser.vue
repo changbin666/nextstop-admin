@@ -1,12 +1,5 @@
 <template>
     <div>
-        <div class="crumbs">
-            <el-breadcrumb separator="/">
-                <el-breadcrumb-item>
-                    <i class="el-icon-lx-cascades"></i> 客户信息管理
-                </el-breadcrumb-item>
-            </el-breadcrumb>
-        </div>
         <div class="container">
             <div class="handle-box">
                 <el-input v-model="query.name" placeholder="客户昵称或邮箱" class="handle-input mr10"></el-input>
@@ -21,32 +14,43 @@
                 header-cell-class-name="table-header"
                 @selection-change="handleSelectionChange"
             >
-                <el-table-column type="selection" width="55" align="center"></el-table-column>
-                <el-table-column prop="id" label="ID" width="55" align="center"></el-table-column>
-                <el-table-column prop="nickName" label="客户昵称"></el-table-column>
-                <el-table-column prop="userEmail" label="登录邮箱"></el-table-column>
-                <el-table-column prop="userPhone" label="手机号"></el-table-column>
-                <el-table-column prop="userWechat" label="微信"></el-table-column>
-                <el-table-column prop="registerTime" label="注册时间"></el-table-column>
-                <el-table-column label="VIP支付截图" align="center">
+                <el-table-column label="序号" width="50px" align="center">
+                    <template slot-scope="scope">
+                        {{ (query.pageIndex - 1) * query.pageSize + scope.$index + 1 }}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="id" label="ID" width="55" v-if="show"></el-table-column>
+                <el-table-column prop="nickName" label="客户昵称" align="center"></el-table-column>
+                <el-table-column prop="userEmail" label="登录邮箱" align="center"></el-table-column>
+                <el-table-column prop="userPhone" label="手机号" align="center"></el-table-column>
+                <el-table-column prop="userWechat" label="微信" align="center"></el-table-column>
+                <el-table-column prop="registerTime" label="注册时间" align="center"></el-table-column>
+                <el-table-column prop="" label="VIP支付截图" align="center">
                     <template slot-scope="scope">
                         <el-image
                             class="table-td-thumb"
-                            :src="scope.row.thumb"
-                            :preview-src-list="[scope.row.thumb]"
-                        ></el-image>
+                            :src="scope.row.payRecordPath"
+                            :preview-src-list="[scope.row.payRecordPath]"
+                        >
+                        <div slot="placeholder" class="image-slot">
+                            <i class="el-icon-loading"></i>加载中
+                        </div>
+                        <div slot="error" class="image-slot">
+                            <i class="el-icon-picture-outline"></i>
+                        </div>
+                        </el-image>
                     </template>
                 </el-table-column>
-                <el-table-column prop="isVip" label="是否VIP">
+                <el-table-column prop="isVip" label="是否VIP" align="center">
                     <template slot-scope="scope">
                         <el-switch v-model="scope.row.isVip"
                             :active-value="1"
-                            :inactive-value="2"
+                            :inactive-value="0"
                             @change=changeVipStatus($event,scope.row,scope.$index)>
                         </el-switch>
                     </template>
                 </el-table-column>
-                <el-table-column prop="delStatus" label="启用/停用">
+                <el-table-column prop="delStatus" label="启用/停用" align="center">
                     <template slot-scope="scope">
                         <el-switch v-model="scope.row.delStatus"
                             :active-value="0"
@@ -87,6 +91,12 @@
                 <el-form-item label="登录邮箱">
                     <el-input v-model="addForm.userEmail"></el-input>
                 </el-form-item>
+                <el-form-item label="客户手机号">
+                    <el-input v-model="addForm.userPhone"></el-input>
+                </el-form-item>
+                <el-form-item label="客户微信号">
+                    <el-input v-model="addForm.userWechat"></el-input>
+                </el-form-item>
                 <el-form-item label="初始化密码">
                     <el-input v-model="addForm.userPassword"></el-input>
                 </el-form-item>
@@ -107,8 +117,11 @@
                 <el-form-item label="登录邮箱">
                     <el-input v-model="editForm.userEmail"></el-input>
                 </el-form-item>
-                <el-form-item label="修改密码">
-                    <el-input v-model="editForm.memberNo"></el-input>
+                <el-form-item label="客户手机号">
+                    <el-input v-model="editForm.userPhone"></el-input>
+                </el-form-item>
+                <el-form-item label="客户微信号">
+                    <el-input v-model="editForm.userWechat"></el-input>
                 </el-form-item>
             </el-form>
             <span slot="footer" class="dialog-footer">
@@ -121,7 +134,7 @@
 </template>
 
 <script>
-import {clientUserList,saveClientUser,updateClientUser,deleteClientUser} from '../../utils/request';
+import {clientUserList,saveClientUser,updateClientUser,changeUserDelStatus,changeUserVipStatus} from '../../utils/request';
 export default {
     name: 'basetable',
     data() {
@@ -139,6 +152,7 @@ export default {
             pageTotal: 0,
             editForm: {},
             addForm: {},
+            show:false,
             idx: -1,
             id: -1
         };
@@ -149,17 +163,17 @@ export default {
     methods: {
         //停用启用状态变更
         changeDelStatus(event,row,index) {
-            // 二次确认删除
-            this.$confirm('确定要删除吗？', '提示', {
+            // 二次确认
+            this.$confirm('确定要启用或停用此用户吗？', '提示', {
                 type: 'warning'
             })
                 .then(() => {
                     let param = new URLSearchParams();
                     param.append("id",row.id);
-                    param.append("id",row.id);
+                    param.append("delStatus",row.delStatus);
                     this.listLoading = true;
                     //NProgress.start();
-                    deleteClientUser(param).then((res) => {
+                    changeUserDelStatus(param).then((res) => {
                         let { message, status, datas } = res;
                         if (status !== 0) {
                             this.$message({
@@ -174,7 +188,12 @@ export default {
                 .catch(() => {});
         },
         changeVipStatus(event,row,index){
-            clientUserList(param).then((res) => {
+            let param = new URLSearchParams();
+            param.append("id",row.id);
+            param.append("isVip",row.isVip);
+            this.listLoading = true;
+            //NProgress.start();
+            changeUserVipStatus(param).then((res) => {
                 let { message, status, datas } = res;
                 if (status !== 0) {
                     this.$message({
@@ -182,11 +201,8 @@ export default {
                     type: 'error'
                     });
                 } else {
-                    this.pageTotal = datas.total;
-                    this.tableData = datas.list;
-                    this.listLoading = false;
+                    this.clientUserList();
                 }
-                //NProgress.done();
             });
         },
         //获取用户列表
@@ -216,32 +232,6 @@ export default {
         handleSearch() {
             this.$set(this.query, 'pageIndex', 1);
             this.clientUserList();
-        },
-        // 删除操作
-        handleDelete(index, row) {
-            // 二次确认删除
-            this.$confirm('确定要删除吗？', '提示', {
-                type: 'warning'
-            })
-                .then(() => {
-                    let param = new URLSearchParams();
-                    param.append("id",row.id);
-                    this.listLoading = true;
-                    //NProgress.start();
-                    deleteClientUser(param).then((res) => {
-                        let { message, status, datas } = res;
-                        if (status !== 0) {
-                            this.$message({
-                            message: message,
-                            type: 'error'
-                            });
-                        } else {
-                            this.clientUserList();
-                        }
-                        //NProgress.done();
-                    });
-                })
-                .catch(() => {});
         },
         // 多选操作
         handleSelectionChange(val) {

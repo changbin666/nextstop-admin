@@ -9,15 +9,4 @@ module.exports = {
         hotOnly: false, //热更新
         port: 80,
     }
-    // devServer: {
-    //     proxy: {
-    //         '/api':{
-    //             target:'http://jsonplaceholder.typicode.com',
-    //             changeOrigin:true,
-    //             pathRewrite:{
-    //                 '/api':''
-    //             }
-    //         }
-    //     }
-    // }
 }

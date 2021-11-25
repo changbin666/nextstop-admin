@@ -46,19 +46,23 @@ axios.defaults.validateStatus = status => {
 
   //客户列表
   export const clientUserList = params => {
-    return axios.post('/ns/admin/clientUserList', params).then(res => res.data);
+    return axios.post('/ns/admin/client/clientUserList', params).then(res => res.data);
   };
 
   //新增客户
   export const saveClientUser = params => {
-    return axios.post('/ns/admin/saveClientUser', qs.stringify(params)).then(res => res.data);
+    return axios.post('/ns/admin/client/saveClientUser', qs.stringify(params)).then(res => res.data);
   };
 
   //更新客户
   export const updateClientUser = params => {
-    return axios.post('/ns/admin/updateClientUser', qs.stringify(params)).then(res => res.data);
+    return axios.post('/ns/admin/client/updateClientUser', qs.stringify(params)).then(res => res.data);
   };
-  //删除客户
-  export const deleteClientUser = params => {
-  return axios.post('/ns/admin/deleteClientUser', params).then(res => res.data);
-};
+  //更改客户停用状态
+  export const changeUserDelStatus = params => {
+    return axios.post('/ns/admin/client/changeDelStatus', params).then(res => res.data);
+  };
+  //更改客户VIP状态
+  export const changeUserVipStatus = params => {
+    return axios.post('/ns/admin/client/changeVipStatus', params).then(res => res.data);
+  };
